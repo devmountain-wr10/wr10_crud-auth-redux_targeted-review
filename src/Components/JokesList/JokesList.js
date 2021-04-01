@@ -2,22 +2,49 @@ import { Component } from 'react';
 import AddJoke from './AddJoke';
 import JokeItem from './JokeItem';
 import './JokesList.scss';
+import { connect } from 'react-redux';
+import { updateJokes } from '../../redux/reducers/jokesReducer';
 import { Redirect } from 'react-router-dom';
+import axios from 'axios';
+
+// CHALLENGE:
+// after a user searches, can you make a 'clear search' button functionality?
 
 class JokesList extends Component {
     constructor() {
         super();
         this.state = {
-            jokes: [
-                {joke_id: 1, joke_text: 'This is dummy data!'},
-                {joke_id: 2, joke_text: 'Yet MORE dummy data!'}
-            ], // we'll move this to redux
-            searchJokes: ''
+            search: ''
         }
     }
 
     componentDidMount() {
-        // what do?
+        this.getJokes();
+    }
+
+    getJokes = () => {
+        // using this function in componentDidMount and passing down to children so they can refresh the jokes list if a joke is added/edited/deleted
+        axios
+            .get(`/api/jokes`)
+            .then(res => {
+                this.props.updateJokes(res.data)
+            })
+    }
+
+    searchJokes = () => {
+        if (!this.state.search) {
+            this.getJokes(); // if click search but no search word, just return all jokes
+        } else {
+            axios
+                .get(`/api/jokes?search=${this.state.search}`)
+                .then(res => {
+                    this.props.updateJokes(res.data)
+
+                    this.setState({ //clear the search so our if statement at the beginning of this function works if the user double clicks 'search'
+                        search: ''
+                    })
+                })
+        }
     }
 
     handleChange = e => {
@@ -26,22 +53,20 @@ class JokesList extends Component {
     }
 
     render() {
-        const { addJoke, jokes } = this.state;
+        const jokesMapped = this.props.jokesReducer.jokes.map((jokeObj, i) => <JokeItem key={i} jokeObj={jokeObj} getJokes={this.getJokes} />)
 
-        const jokesMapped = jokes.map((jokeObj, i) => <JokeItem key={i} jokeObj={jokeObj} />)
-
-        // we'll update this so only users can see jokes
-        if (false) {
+        // we'll include this so only users can see jokes
+        if (!this.props.userReducer.user) {
             return <Redirect to='/' />
         }
 
         return (
             <section className='jokes-list'>
-                <AddJoke />
+                <AddJoke getJokes={this.getJokes} />
 
                 <div className='search-jokes'>
-                    <input name='searchJokes' placeholder='search jokes' onChange={this.handleChange} className='search-input' />
-                    <button className='search-submit'>search</button>
+                    <input name='search' placeholder='search jokes' onChange={this.handleChange} className='search-input' value={this.state.search} />
+                    <button className='search-submit' onClick={this.searchJokes}>search</button>
                 </div>
 
                 { jokesMapped }
@@ -50,4 +75,8 @@ class JokesList extends Component {
     }
 }
 
-export default JokesList;
+const mapStateToProps = reduxState => {
+    return reduxState
+}
+
+export default connect(mapStateToProps, { updateJokes })(JokesList);

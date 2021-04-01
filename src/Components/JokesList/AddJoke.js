@@ -1,5 +1,6 @@
 import { Component } from 'react';
 import './AddJoke.scss';
+import axios from 'axios';
 
 class AddJoke extends Component {
     constructor() {
@@ -21,7 +22,17 @@ class AddJoke extends Component {
 
     handleAddJoke = e => {
         e.preventDefault();
-        console.log('joke added! or not...')
+        
+        axios
+            .post('/api/jokes', { joke_text: this.state.newJoke})
+            .then(() => {
+                this.setState({
+                    newJoke: ''
+                })
+
+                this.props.getJokes(); // refresh the jokes from function passed as prop from JokesList.js
+            })
+            .catch(err => console.log(err))
     }
 
     render() {
@@ -37,7 +48,7 @@ class AddJoke extends Component {
                 {
                     addMode ? (
                         <form onSubmit={this.handleAddJoke} className='new-joke-form'>
-                            <input name='newJoke' placeholder='new joke!' onChange={this.handleChange} className='new-joke-joke' />
+                            <input name='newJoke' placeholder='new joke!' onChange={this.handleChange} className='new-joke-joke' value={newJoke} />
 
                             <button type='submit' className='new-joke-submit'>submit</button>
                         </form>

@@ -1,5 +1,9 @@
 import { Component } from 'react';
+import axios from 'axios';
 import './Auth.scss';
+import { Redirect } from 'react-router-dom';
+import { connect } from 'react-redux';
+import { updateUser } from '../../redux/reducers/userReducer';
 
 class Auth extends Component {
     constructor() {
@@ -22,11 +26,29 @@ class Auth extends Component {
     }
 
     handleSubmit = () => {
-        // what do?
+        const { mode, email, password } = this.state;
+
+        const path = mode === 'register' ? 'register' : 'login';
+
+        axios
+            .post(`/auth/${path}`, { email, password })
+            .then(res => {
+                this.props.updateUser(res.data);
+                this.props.history.push('/jokes');
+            })
+            .catch(err => {
+                console.log(err);
+                window.alert(err.response.data)
+            });
     }
 
     render() {
         const { mode } = this.state;
+
+        // we'll include this so if a user refreshes the page on another view then they are pushed to JokesList.js
+        if (this.props.userReducer.user) {
+            return <Redirect to='/jokes' />
+        }
 
         return (
             <section className='Auth'>
@@ -38,8 +60,8 @@ class Auth extends Component {
 
                 <div>
                     <input placeholder='email' name='email' onChange={this.handleInput} />
-                    <input placeholder='password' name='password' onChange={this.handleInput} />
-                    <button>Submit</button>
+                    <input placeholder='password' name='password' onChange={this.handleInput} type='password' />
+                    <button onClick={this.handleSubmit}>Submit</button>
                 </div>
                 
             </section>
@@ -47,4 +69,8 @@ class Auth extends Component {
     }
 }
 
-export default Auth;
+const mapStateToProps = reduxState => {
+    return reduxState;
+}
+
+export default connect(mapStateToProps, { updateUser })(Auth);
